@@ -1,0 +1,18 @@
+#!/bin/sh
+
+workspace=change
+while [ "$#" -gt 0 ]; do
+    if [ "$1" = --repository ]; then
+        shift
+        workspace=${1##*/}
+    fi
+    shift
+done
+
+printf '%s\n' "$$" >>"$NAMI_TEST_JJ_STARTED"
+
+while [ -e "$NAMI_TEST_JJ_GATE" ]; do
+    sleep 0.01
+done
+
+printf '%s\tnormal\n' "$workspace"

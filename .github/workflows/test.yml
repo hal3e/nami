@@ -1,0 +1,70 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Fish ${{ matrix.fish }} / JJ ${{ matrix.jj }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - fish: 4.0.8
+            jj: 0.41.0
+          - fish: 4.7.1
+            jj: 0.43.0
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Fish
+        env:
+          FISH_VERSION: ${{ matrix.fish }}
+        run: |
+          cargo install --locked \
+            --git https://github.com/fish-shell/fish-shell.git \
+            --tag "$FISH_VERSION" \
+            --root "$RUNNER_TEMP/fish-build" \
+            fish --bins
+          if [[ "$FISH_VERSION" == 4.0.* ]]; then
+            printf 'yes\n' | "$RUNNER_TEMP/fish-build/bin/fish" --install="$RUNNER_TEMP/fish"
+            echo "$RUNNER_TEMP/fish/bin" >> "$GITHUB_PATH"
+          else
+            echo "$RUNNER_TEMP/fish-build/bin" >> "$GITHUB_PATH"
+          fi
+
+      - name: Install JJ
+        env:
+          JJ_VERSION: ${{ matrix.jj }}
+        run: |
+          cargo install --locked \
+            --version "=$JJ_VERSION" \
+            --root "$RUNNER_TEMP/jj" \
+            jj-cli --bin jj
+          echo "$RUNNER_TEMP/jj/bin" >> "$GITHUB_PATH"
+
+      - name: Install Fishtape
+        run: |
+          git clone https://github.com/jorgebucaran/fishtape.git "$RUNNER_TEMP/fishtape"
+          git -C "$RUNNER_TEMP/fishtape" checkout --detach e6e5fc23dd062ee5ed11828951bf2c85d6798db5
+
+      - name: Check syntax
+        run: fish --no-execute conf.d/nami.fish functions/*.fish tests/*.fish tests/helpers/*.fish
+
+      - name: Check formatting
+        run: "$RUNNER_TEMP/fish-build/bin/fish_indent" --check conf.d/nami.fish functions/*.fish tests/*.fish tests/helpers/*.fish
+
+      - name: Run tests
+        env:
+          XDG_CONFIG_HOME: ${{ runner.temp }}/nami-fishtape
+        run: |
+          mkdir -p "$XDG_CONFIG_HOME/fish"
+          fish -c "set --prepend fish_function_path '$RUNNER_TEMP/fishtape/functions'; fishtape tests/*.fish"
