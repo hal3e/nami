@@ -103,18 +103,26 @@ set nami_color_error red
 set nami_color_prompt normal
 set nami_symbol_start ''
 set nami_symbol_prompt '>'
-set _nami_pwd '~'
-set --erase _nami_cmd_duration _nami_status
+set fish_prompt_pwd_dir_length 0
+set nami_cmd_duration_threshold 999999999
+set --erase _nami_jj_workspace_root
 
 set _nami_jj querying
+true
 set querying_prompt (_strip_ansi (fish_prompt | string collect))
 set _nami_jj normal x
+true
 set ready_prompt (_strip_ansi (fish_prompt | string collect))
 @test 'given one-character JJ result, when query completes, then prompt symbol remains stable' \
     (string length -- "$querying_prompt") -eq (string length -- "$ready_prompt")
 
 set --erase _nami_jj
-set _nami_cmd_duration 1s
-set _nami_status '0 1'
+set --global CMD_DURATION 1000
+set nami_cmd_duration_threshold 1000
+function _prompt_after_failed_pipeline
+    true | false
+    fish_prompt
+end
 @test 'given duration and failed pipeline, when prompt renders, then segments keep stable order' \
-    (_strip_ansi (fish_prompt | string collect)) = '~ 1s | 0 1 > '
+    (_strip_ansi (_prompt_after_failed_pipeline | string collect)) = (path basename "$PWD")' 1s | 0 1 > '
+set --erase CMD_DURATION

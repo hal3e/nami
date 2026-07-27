@@ -31,7 +31,7 @@ end
 
 function nami_test_wait_for_jj --argument-names condition
     for attempt in (seq 700)
-        if test "$_nami_jj[1]" = "$condition"; and not set --query _nami_jj_worker_pid
+        if test "$_nami_jj[1]" = "$condition"; and not set --query _nami_jj_worker[1]
             return 0
         end
         sleep 0.01
@@ -41,7 +41,7 @@ end
 
 function nami_test_wait_for_jj_failure
     for attempt in (seq 700)
-        if not set --query _nami_jj; and not set --query _nami_jj_worker_pid
+        if not set --query _nami_jj; and not set --query _nami_jj_worker[1]
             return 0
         end
         sleep 0.01
@@ -59,7 +59,7 @@ function nami_test_process_state --argument-names process_id
 end
 
 function nami_test_worker_state
-    set --query _nami_jj_worker_pid; and echo running; or echo idle
+    set --query _nami_jj_worker[1]; and echo running; or echo idle
 end
 
 function nami_test_records --argument-names file

@@ -22,13 +22,13 @@ set --query nami_ignored_jj_paths; or set --global nami_ignored_jj_paths
 function _nami_stop_jj_worker --on-event fish_exit
     functions --erase _nami_receive_jj 2>/dev/null
 
-    if set --query _nami_jj_worker_pid
-        /bin/sh -c 'kill -KILL "$1" 2>/dev/null' sh "$_nami_jj_worker_pid"
-        wait "$_nami_jj_worker_pid" 2>/dev/null
+    if set --query _nami_jj_worker[1]
+        /bin/sh -c 'kill -KILL "$1" 2>/dev/null' sh "$_nami_jj_worker[1]"
+        wait "$_nami_jj_worker[1]" 2>/dev/null
     end
 
-    set --query _nami_jj_worker_result_file; and command rm -f -- "$_nami_jj_worker_result_file"
-    set --erase _nami_jj_worker_pid _nami_jj_worker_result_file
+    set --query _nami_jj_worker[2]; and command rm -f -- "$_nami_jj_worker[2]"
+    set --erase _nami_jj_worker
 end
 
 function _nami_fail_jj
@@ -54,16 +54,15 @@ function _nami_start_jj_worker --argument-names workspace_root
     block
     command "$jj_path" --no-integrate-operation --quiet --repository "$workspace_root" \
         log --no-pager --color=never --no-graph --revisions @ --template "$template" >"$result_file" 2>/dev/null &
-    set --global _nami_jj_worker_pid $last_pid
-    set --global _nami_jj_worker_result_file "$result_file"
+    set --global _nami_jj_worker $last_pid "$result_file"
 
-    function _nami_receive_jj --on-process-exit "$_nami_jj_worker_pid" \
+    function _nami_receive_jj --on-process-exit "$_nami_jj_worker[1]" \
         --inherit-variable result_file \
         --argument-names event process_id exit_status
         set --local change_id condition
         test "$exit_status" = 0; and read --delimiter \t change_id condition <"$result_file"
         command rm -f -- "$result_file"
-        set --erase _nami_jj_worker_pid _nami_jj_worker_result_file
+        set --erase _nami_jj_worker
 
         if test -n "$change_id"; and test -n "$condition"
             set --global _nami_jj "$condition" "$change_id"
@@ -87,7 +86,6 @@ function _nami_refresh --on-event fish_prompt
     set --local workspace_root (_nami_find_jj_root "$PWD")
 
     _nami_stop_jj_worker
-    set --global _nami_pwd (_nami_format_pwd "$PWD" "$workspace_root" "$fish_prompt_pwd_dir_length")
     set --global _nami_jj_workspace_root "$workspace_root"
 
     if test -z "$workspace_root"; or contains -- "$workspace_root" $nami_ignored_jj_paths
@@ -107,15 +105,6 @@ function _nami_on_pwd --on-variable PWD
 
     _nami_refresh
     commandline --function repaint 2>/dev/null
-end
-
-function _nami_postexec --on-event fish_postexec
-    set --local last_pipestatus $pipestatus
-
-    set --erase _nami_status
-    string match --quiet --invert 0 -- $last_pipestatus; and set --global _nami_status (string join ' ' -- $last_pipestatus)
-
-    set --global _nami_cmd_duration (_nami_format_duration "$CMD_DURATION" "$nami_cmd_duration_threshold")
 end
 
 function _nami_uninstall --on-event nami_uninstall

@@ -1,9 +1,16 @@
 function fish_prompt --description Nami
+    set --local last_pipestatus $pipestatus
+    set --local cmd_duration (_nami_format_duration "$CMD_DURATION" "$nami_cmd_duration_threshold")
+    set --local failed_status
+    string match --quiet --invert 0 -- $last_pipestatus; and set failed_status (string join ' ' -- $last_pipestatus)
+    set --local pwd (_nami_format_pwd "$PWD" "$_nami_jj_workspace_root" "$fish_prompt_pwd_dir_length")
+
     set --local reset (set_color normal)
     set --local parts
 
-    set --append parts \
-        (set_color $nami_color_start)"$nami_symbol_start$reset"(set_color $nami_color_pwd)"$_nami_pwd$reset"
+    set --append parts (string join '' -- \
+        (set_color $nami_color_start) "$nami_symbol_start" "$reset" \
+        (set_color $nami_color_pwd) "$pwd" "$reset")
 
     set --local jj_color jj_suffix
     switch "$_nami_jj[1]"
@@ -25,13 +32,13 @@ function fish_prompt --description Nami
     set --query _nami_jj[2]; and set --append parts \
         (set_color $jj_color)"$_nami_jj[2]$jj_suffix$reset"
 
-    test -z "$_nami_cmd_duration"; or set --append parts \
-        (set_color $nami_color_duration)"$_nami_cmd_duration$reset"
-    test -z "$_nami_status"; or set --append parts \
-        (set_color $nami_color_error)"| $_nami_status$reset"
+    test -z "$cmd_duration"; or set --append parts \
+        (set_color $nami_color_duration)"$cmd_duration$reset"
+    test -z "$failed_status"; or set --append parts \
+        (set_color $nami_color_error)"| $failed_status$reset"
 
     set --local prompt_color $nami_color_prompt
-    test -z "$_nami_status"; or set prompt_color $nami_color_error
+    test -z "$failed_status"; or set prompt_color $nami_color_error
 
     printf '%s %s%s%s ' \
         (string join ' ' -- $parts) \

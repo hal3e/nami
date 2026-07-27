@@ -14,7 +14,7 @@ set runtime_script '
 source "$NAMI_TEST_HELPERS"
 emit fish_prompt
 nami_test_wait_for_file_lines "$NAMI_TEST_JJ_STARTED" 1; or exit 1
-set first_pid $_nami_jj_worker_pid
+set first_pid $_nami_jj_worker[1]
 
 emit fish_preexec "cd second"
 cd "$PWD/second"
@@ -23,7 +23,6 @@ printf "DEFERRED:first=%s,current=%s,starts=%s\n" \
     (nami_test_worker_state) \
     (count (string split "\n" <"$NAMI_TEST_JJ_STARTED"))
 
-emit fish_postexec "cd second"
 emit fish_prompt
 nami_test_wait_for_file_lines "$NAMI_TEST_JJ_STARTED" 2; or exit 1
 printf "REPLACED:first=%s,current=%s,starts=%s\n" \

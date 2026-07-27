@@ -22,14 +22,14 @@ nami_test_wait_for_jj no_description; or exit 1
 
 printf "DEFAULT:jj-color=%s,prompt=%s\n" "$nami_color_jj" "$nami_symbol_prompt"
 set path_state missing
-string match --quiet --regex "nami" -- "$_nami_pwd"; and set path_state ready
+string match --quiet --regex "nami" -- (fish_prompt | string collect); and set path_state ready
 printf "ROOT:root=%s,path=%s\n" "$_nami_jj_workspace_root" "$path_state"
 printf "RESULT:condition=%s,id=%s\n" "$_nami_jj[1]" "$_nami_jj[2]"
 
 cd "$PWD/nested"
 nami_test_wait_for_jj no_description; or exit 1
 set path_state missing
-string match --quiet --regex "nested" -- "$_nami_pwd"; and set path_state ready
+string match --quiet --regex "nested" -- (fish_prompt | string collect); and set path_state ready
 printf "NESTED:path=%s,worker=%s,id=%s\n" \
     "$path_state" (nami_test_worker_state) "$_nami_jj[2]"
 
@@ -107,7 +107,6 @@ emit fish_prompt
 nami_test_wait_for_jj_failure; or exit 1
 emit fish_preexec true
 set --erase PATH[1]
-emit fish_postexec true
 emit fish_prompt
 nami_test_wait_for_jj no_description; or exit 1
 printf "RECOVERY:condition=%s,id=%s\n" "$_nami_jj[1]" "$_nami_jj[2]"
