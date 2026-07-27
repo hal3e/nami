@@ -29,21 +29,17 @@ function nami_test_wait_for_file_lines --argument-names file minimum
     return 1
 end
 
-function nami_test_wait_for_jj --argument-names condition
+function nami_test_wait_for_prompt --argument-names expected
     for attempt in (seq 700)
-        if test "$_nami_jj[1]" = "$condition"; and not set --query _nami_jj_worker[1]
-            return 0
-        end
+        string match --quiet -- "*$expected*" (fish_prompt | string collect); and return 0
         sleep 0.01
     end
     return 1
 end
 
-function nami_test_wait_for_jj_failure
+function nami_test_wait_for_no_jobs
     for attempt in (seq 700)
-        if not set --query _nami_jj; and not set --query _nami_jj_worker[1]
-            return 0
-        end
+        jobs --query; or return 0
         sleep 0.01
     end
     return 1
@@ -56,10 +52,6 @@ end
 
 function nami_test_process_state --argument-names process_id
     nami_test_process_alive "$process_id"; and echo alive; or echo dead
-end
-
-function nami_test_worker_state
-    set --query _nami_jj_worker[1]; and echo running; or echo idle
 end
 
 function nami_test_records --argument-names file

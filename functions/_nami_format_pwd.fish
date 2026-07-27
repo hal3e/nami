@@ -1,5 +1,4 @@
 function _nami_format_pwd --argument-names current_pwd workspace_root segment_length
-    string match --quiet --regex '^[0-9]+$' -- "$segment_length"; or set segment_length 1
     set --local display_path
 
     if test "$segment_length" = 0

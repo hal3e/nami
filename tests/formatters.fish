@@ -46,7 +46,16 @@ set nami_color_jj_empty green
 set nami_color_jj_no_description yellow
 set nami_color_jj_conflict red
 set nami_color_jj_divergent magenta
+set nami_color_start normal
+set nami_color_pwd normal
+set nami_color_duration normal
+set nami_color_error red
+set nami_color_prompt normal
 set nami_symbol_jj_divergent ≠
+set nami_symbol_start ''
+set nami_symbol_prompt '>'
+set fish_prompt_pwd_dir_length 1
+set nami_cmd_duration_threshold 1000
 
 set _nami_jj normal x
 @test 'given described change, when prompt renders, then normal JJ color is used' \
@@ -96,13 +105,6 @@ set fish_bind_mode visual
 @test 'given vi visual mode, when mode renders, then lowercase v is shown' \
     (_strip_ansi (fish_mode_prompt | string collect)) = 'v '
 
-set nami_color_start normal
-set nami_color_pwd normal
-set nami_color_duration normal
-set nami_color_error red
-set nami_color_prompt normal
-set nami_symbol_start ''
-set nami_symbol_prompt '>'
 set fish_prompt_pwd_dir_length 0
 set nami_cmd_duration_threshold 999999999
 set --erase _nami_jj_workspace_root

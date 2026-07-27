@@ -54,8 +54,7 @@ than missing-description state.
 
 Nami discovers the nearest `.jj/` ancestor synchronously with Fish builtins, so
 the workspace name is available before the first prompt render. Nami runs JJ
-directly in the background. Results return through a per-request result file
-and process-exit handler.
+directly in the background and repaints when the newest result arrives.
 
 Nami runs at most one worker. Each new prompt replaces any pending query with a
 fresh query. Directory-history bindings refresh the path and query immediately.
@@ -90,6 +89,7 @@ set --universal nami_ignored_jj_paths /work/large-repo /work/archive
 ```
 
 Colors accept any arguments supported by `set_color`.
+Numeric settings must be non-negative integers.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |

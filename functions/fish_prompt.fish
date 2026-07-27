@@ -29,13 +29,13 @@ function fish_prompt --description Nami
     end
 
     contains -- "$_nami_jj[1]" divergent conflict_divergent; and set jj_suffix $nami_symbol_jj_divergent
-    set --query _nami_jj[2]; and set --append parts \
-        (set_color $jj_color)"$_nami_jj[2]$jj_suffix$reset"
+    set --query _nami_jj[2]; and set --append parts (string join '' -- \
+        (set_color $jj_color) "$_nami_jj[2]$jj_suffix" "$reset")
 
-    test -z "$cmd_duration"; or set --append parts \
-        (set_color $nami_color_duration)"$cmd_duration$reset"
-    test -z "$failed_status"; or set --append parts \
-        (set_color $nami_color_error)"| $failed_status$reset"
+    test -z "$cmd_duration"; or set --append parts (string join '' -- \
+        (set_color $nami_color_duration) "$cmd_duration" "$reset")
+    test -z "$failed_status"; or set --append parts (string join '' -- \
+        (set_color $nami_color_error) "| $failed_status" "$reset")
 
     set --local prompt_color $nami_color_prompt
     test -z "$failed_status"; or set prompt_color $nami_color_error

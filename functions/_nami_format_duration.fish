@@ -1,6 +1,5 @@
 function _nami_format_duration --argument-names duration_ms threshold_ms
-    string match --quiet --regex '^[0-9]+$' -- "$duration_ms"; or return
-    string match --quiet --regex '^[0-9]+$' -- "$threshold_ms"; or set threshold_ms 1000
+    test -n "$duration_ms"; or return
     test "$duration_ms" -ge "$threshold_ms"; or return
 
     set --local hours (math --scale=0 "floor($duration_ms / 3600000)")
