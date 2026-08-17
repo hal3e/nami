@@ -22,13 +22,13 @@ set --query nami_ignored_jj_paths; or set --global nami_ignored_jj_paths
 function _nami_stop_jj_worker --on-event fish_exit
     functions --erase _nami_receive_jj 2>/dev/null
 
-    if set --query _nami_jj_worker[1]
-        /bin/sh -c 'kill -KILL "$1" 2>/dev/null' sh "$_nami_jj_worker[1]"
-        wait "$_nami_jj_worker[1]" 2>/dev/null
+    if set --query _nami_jj_worker_pid
+        /bin/sh -c 'kill -KILL "$1" 2>/dev/null' sh "$_nami_jj_worker_pid"
+        wait "$_nami_jj_worker_pid" 2>/dev/null
     end
 
-    set --query _nami_jj_worker[2]; and command rm -f -- "$_nami_jj_worker[2]"
-    set --erase _nami_jj_worker
+    set --query _nami_jj_worker_result_file; and command rm -f -- "$_nami_jj_worker_result_file"
+    set --erase _nami_jj_worker_pid _nami_jj_worker_result_file
 end
 
 function _nami_fail_jj
@@ -45,24 +45,39 @@ function _nami_start_jj_worker --argument-names workspace_root
         return 1
     end
 
-    set --local result_file (mktemp); or begin
+    set --local result_file (command mktemp); or begin
         _nami_fail_jj
         return 1
     end
-    set --local template 'change_id.shortest().prefix() ++ "\t" ++ if(conflict, if(divergent, "conflict_divergent", "conflict"), if(divergent, "divergent", if(empty, "empty", if(description, "normal", "no_description")))) ++ "\n"'
+    set --local template '
+        change_id.shortest().prefix()
+        ++ "\t"
+        ++ if(
+            conflict,
+            if(divergent, "conflict_divergent", "conflict"),
+            if(
+                divergent,
+                "divergent",
+                if(empty, "empty", if(description, "normal", "no_description"))
+            )
+        )
+        ++ "\n"
+    '
 
+    # Delay fast process-exit delivery until the receiver is registered.
     block
     command "$jj_path" --no-integrate-operation --quiet --repository "$workspace_root" \
         log --no-pager --color=never --no-graph --revisions @ --template "$template" >"$result_file" 2>/dev/null &
-    set --global _nami_jj_worker $last_pid "$result_file"
+    set --global _nami_jj_worker_pid $last_pid
+    set --global _nami_jj_worker_result_file "$result_file"
 
-    function _nami_receive_jj --on-process-exit "$_nami_jj_worker[1]" \
+    function _nami_receive_jj --on-process-exit "$_nami_jj_worker_pid" \
         --inherit-variable result_file \
         --argument-names event process_id exit_status
         set --local change_id condition
         test "$exit_status" = 0; and read --delimiter \t change_id condition <"$result_file"
         command rm -f -- "$result_file"
-        set --erase _nami_jj_worker
+        set --erase _nami_jj_worker_pid _nami_jj_worker_result_file
 
         if test -n "$change_id"; and test -n "$condition"
             set --global _nami_jj "$condition" "$change_id"

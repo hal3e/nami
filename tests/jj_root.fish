@@ -1,6 +1,6 @@
 set project_root (path resolve (path dirname (status filename))/..)
 set --prepend fish_function_path "$project_root/functions"
-set temp_root (mktemp -d)
+set temp_root (command mktemp -d)
 set workspace "$temp_root/workspace"
 set nested_workspace "$workspace/nested"
 set outside "$temp_root/outside"

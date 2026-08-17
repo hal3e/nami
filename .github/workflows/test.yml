@@ -18,7 +18,7 @@ jobs:
         include:
           - fish: 4.0.8
             jj: 0.41.0
-          - fish: 4.7.1
+          - fish: 4.8.1
             jj: 0.43.0
 
     steps:
@@ -57,10 +57,10 @@ jobs:
           git -C "$RUNNER_TEMP/fishtape" checkout --detach e6e5fc23dd062ee5ed11828951bf2c85d6798db5
 
       - name: Check syntax
-        run: fish --no-execute conf.d/nami.fish functions/*.fish tests/*.fish tests/helpers/*.fish
+        run: fish --no-execute conf.d/nami.fish functions/*.fish tests/*.fish tests/helpers/*.fish tests/scenarios/*.fish
 
       - name: Check formatting
-        run: "$RUNNER_TEMP/fish-build/bin/fish_indent" --check conf.d/nami.fish functions/*.fish tests/*.fish tests/helpers/*.fish
+        run: "$RUNNER_TEMP/fish-build/bin/fish_indent" --check conf.d/nami.fish functions/*.fish tests/*.fish tests/helpers/*.fish tests/scenarios/*.fish
 
       - name: Run tests
         env:

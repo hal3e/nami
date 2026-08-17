@@ -1,4 +1,4 @@
-function nami_test_run_runtime --argument-names project_root temp_root working_directory runtime_script
+function nami_test_run_runtime --argument-names project_root temp_root working_directory scenario_file
     set --local environment $argv[5..-1]
     set --local config_root "$temp_root/fish"
     set --local stdout_file "$temp_root/runtime.stdout"
@@ -9,7 +9,7 @@ function nami_test_run_runtime --argument-names project_root temp_root working_d
     cp "$project_root"/functions/*.fish "$config_root/functions/"
     pushd "$working_directory" >/dev/null; or return 1
     env $environment XDG_CONFIG_HOME="$temp_root" (status fish-path) \
-        --interactive --command "$runtime_script" >"$stdout_file" 2>"$stderr_file"
+        --interactive "$scenario_file" >"$stdout_file" 2>"$stderr_file"
     set --local runtime_status $status
     popd >/dev/null
 
@@ -52,6 +52,22 @@ end
 
 function nami_test_process_state --argument-names process_id
     nami_test_process_alive "$process_id"; and echo alive; or echo dead
+end
+
+function nami_test_worker_pids --argument-names file
+    string match --regex '^[0-9]+$' <"$file"
+end
+
+function nami_test_worker_count --argument-names file
+    count (nami_test_worker_pids "$file")
+end
+
+function nami_test_job_state
+    jobs --query; and echo running; or echo idle
+end
+
+function nami_test_file_state --argument-names file
+    test -e "$file"; and echo present; or echo removed
 end
 
 function nami_test_records --argument-names file

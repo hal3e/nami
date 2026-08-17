@@ -1,16 +1,18 @@
 function fish_prompt --description Nami
     set --local last_pipestatus $pipestatus
-    set --local cmd_duration (_nami_format_duration "$CMD_DURATION" "$nami_cmd_duration_threshold")
+    set --local duration_threshold (_nami_config_integer nami_cmd_duration_threshold 1000)
+    set --local pwd_dir_length (_nami_config_integer fish_prompt_pwd_dir_length 1)
+    set --local cmd_duration (_nami_format_duration "$CMD_DURATION" "$duration_threshold")
     set --local failed_status
     string match --quiet --invert 0 -- $last_pipestatus; and set failed_status (string join ' ' -- $last_pipestatus)
-    set --local pwd (_nami_format_pwd "$PWD" "$_nami_jj_workspace_root" "$fish_prompt_pwd_dir_length")
+    set --local pwd (_nami_format_pwd "$PWD" "$_nami_jj_workspace_root" "$pwd_dir_length" $nami_color_pwd)
 
     set --local reset (set_color normal)
     set --local parts
 
     set --append parts (string join '' -- \
         (set_color $nami_color_start) "$nami_symbol_start" "$reset" \
-        (set_color $nami_color_pwd) "$pwd" "$reset")
+        "$pwd" "$reset")
 
     set --local jj_color jj_suffix
     switch "$_nami_jj[1]"

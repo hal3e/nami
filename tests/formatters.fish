@@ -16,6 +16,8 @@ end
     (_nami_format_duration 999 1000 | string collect --allow-empty) = ''
 @test 'given duration at threshold, when formatted, then it is shown' \
     (_nami_format_duration 1000 1000) = 1s
+@test 'given sub-tenth duration at zero threshold, when formatted, then lower bound is shown' \
+    (_nami_format_duration 1 0) = '<0.1s'
 @test 'given duration below one minute, when formatted, then it is truncated to tenths' \
     (_nami_format_duration 59999 1000) = 59.9s
 @test 'given exact minute, when formatted, then zero seconds are omitted' \
@@ -32,8 +34,9 @@ end
 @test 'given filesystem root, when formatted, then root remains visible' \
     (_strip_ansi (_nami_format_pwd / '' 1 | string collect)) = /
 @test 'given current directory, when formatted, then basename is bold' (
-    set styled (_nami_format_pwd /opt/acme/nami/src/lib /opt/acme/nami 1 | string collect)
-    string match --quiet --regex '\x1b\[1mlib\x1b\[22m$' -- "$styled"
+    set styled (_nami_format_pwd /opt/acme/nami/src/lib /opt/acme/nami 1 normal | string collect)
+    set bold (set_color normal --bold)
+    string match --quiet -- "*$bold"'lib*' "$styled"
     echo $status
 ) -eq 0
 @test 'given hidden parent directory, when shortened, then leading dot remains meaningful' \

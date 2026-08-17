@@ -1,4 +1,6 @@
 function _nami_format_pwd --argument-names current_pwd workspace_root segment_length
+    set --local color_arguments $argv[4..-1]
+    set --query color_arguments[1]; or set color_arguments normal
     set --local display_path
 
     if test "$segment_length" = 0
@@ -14,17 +16,20 @@ function _nami_format_pwd --argument-names current_pwd workspace_root segment_le
         set display_path (prompt_pwd --dir-length "$segment_length" --full-length-dirs 1 "$current_pwd")
     end
 
-    set --local bold_on \x1b'[1m'
-    set --local dim_on \x1b'[2m'
-    set --local attributes_off \x1b'[22m'
+    set --local plain (string join '' -- \
+        (set_color normal) (set_color $color_arguments))
+    set --local bold (string join '' -- \
+        (set_color normal) (set_color --bold $color_arguments))
+    set --local dim (string join '' -- \
+        (set_color normal) (set_color --dim $color_arguments))
 
     if test "$display_path" = /
-        printf '%s/%s' "$bold_on" "$attributes_off"
+        printf '%s/%s' "$bold" "$plain"
         return
     end
 
-    set --local separator "$dim_on/$attributes_off"
-    set --local formatted (string replace --regex '([^/]+)$' "$bold_on\$1$attributes_off" -- "$display_path")
+    set --local separator "$dim/$plain"
+    set --local formatted (string replace --regex '([^/]+)$' "$bold\$1$plain" -- "$display_path")
     set formatted (string replace --all / "$separator" -- "$formatted")
-    printf '%s' "$formatted"
+    printf '%s%s' "$plain" "$formatted"
 end

@@ -89,7 +89,8 @@ set --universal nami_ignored_jj_paths /work/large-repo /work/archive
 ```
 
 Colors accept any arguments supported by `set_color`.
-Numeric settings must be non-negative integers.
+Numeric settings must be non-negative integers. Invalid values emit one warning
+per setting and use the documented default.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -121,7 +122,7 @@ Use `jj root` to obtain an exact workspace root for
 Tests use [Fishtape](https://github.com/jorgebucaran/fishtape):
 
 ```fish
-fish --no-execute conf.d/nami.fish functions/*.fish tests/*.fish tests/helpers/*.fish
+fish --no-execute conf.d/nami.fish functions/*.fish tests/*.fish tests/helpers/*.fish tests/scenarios/*.fish
 fishtape tests/*.fish
 ```
 

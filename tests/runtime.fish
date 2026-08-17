@@ -1,6 +1,6 @@
 set project_root (path resolve (path dirname (status filename))/..)
 source "$project_root/tests/helpers/runtime.fish"
-set temp_root (mktemp -d)
+set temp_root (command mktemp -d)
 set config_root "$temp_root/fish"
 set repo "$temp_root/nami"
 set outside "$temp_root/outside"
@@ -19,57 +19,8 @@ set change_id (
 mkdir -p "$config_root"
 printf '%s\n' 'set --global fish_greeting' >"$config_root/config.fish"
 
-set runtime_script '
-source "$NAMI_TEST_HELPERS"
-emit fish_prompt
-set jj_needle (string join "" -- \
-    (set_color $nami_color_jj_no_description) "$NAMI_TEST_CHANGE_ID")
-nami_test_wait_for_prompt "$jj_needle"; or exit 1
-
-printf "DEFAULT:jj-color=%s,prompt=%s\n" "$nami_color_jj" "$nami_symbol_prompt"
-set rendered_prompt (fish_prompt | string collect)
-set path_state missing
-string match --quiet --regex "nami" -- "$rendered_prompt"; and set path_state ready
-set result_state missing
-string match --quiet -- "*$jj_needle*" "$rendered_prompt"; and set result_state ready
-printf "ROOT:path=%s\n" "$path_state"
-printf "RESULT:rendered=%s\n" "$result_state"
-
-cd "$PWD/nested"
-nami_test_wait_for_no_jobs; or exit 1
-set rendered_prompt (fish_prompt | string collect)
-set path_state missing
-string match --quiet --regex "nested" -- "$rendered_prompt"; and set path_state ready
-set result_state missing
-string match --quiet -- "*$jj_needle*" "$rendered_prompt"; and set result_state ready
-printf "NESTED:path=%s,jj=%s\n" "$path_state" "$result_state"
-
-cd "$NAMI_TEST_OUTSIDE"
-set jj_state hidden
-string match --quiet -- "*$jj_needle*" (fish_prompt | string collect); and set jj_state visible
-printf "OUTSIDE:jj=%s\n" "$jj_state"
-
-set --global nami_ignored_jj_paths "$NAMI_TEST_REPO"
-cd "$NAMI_TEST_REPO"
-set jj_state hidden
-string match --quiet -- "*$jj_needle*" (fish_prompt | string collect); and set jj_state visible
-printf "IGNORED:jj=%s\n" "$jj_state"
-
-set --universal nami_symbol_prompt X
-function fish_prompt
-    echo user
-end
-emit nami_uninstall
-set public_state removed
-set --query nami_symbol_prompt; and set public_state present
-set internal_count (count (set --names | string match "_nami_*"))
-set prompt_state removed
-functions --query fish_prompt; and set prompt_state present
-printf "UNINSTALL:public=%s,internal=%s,prompt=%s\n" \
-    "$public_state" "$internal_count" "$prompt_state"
-'
-
-nami_test_run_runtime "$project_root" "$temp_root" "$repo" "$runtime_script" \
+nami_test_run_runtime "$project_root" "$temp_root" "$repo" \
+    "$project_root/tests/scenarios/runtime_core.fish" \
     "NAMI_TEST_HELPERS=$project_root/tests/helpers/runtime.fish" \
     "NAMI_TEST_CHANGE_ID=$change_id" \
     "NAMI_TEST_OUTSIDE=$outside" \
@@ -103,27 +54,15 @@ set operation_after (
 @test 'given public setting and user prompt, when Nami uninstalls, then only internals clear' \
     (contains -- 'UNINSTALL:public=present,internal=0,prompt=present' $output; echo $status) -eq 0
 
-nami_test_run_runtime "$project_root" "$temp_root" "$outside" '
-set --global _nami_jj normal x
-set --global CMD_DURATION 1000
-set --global nami_cmd_duration_threshold 1000
-
-function _nami_test_failed_prompt
-    true | false
-    fish_prompt
-end
-
-set rendered_prompt (_nami_test_failed_prompt | string collect)
-set segment_state missing
-string match --quiet -- "*x*1s*| 0 1*" "$rendered_prompt"; and set segment_state ready
-printf "UNCOLORED:segments=%s\n" "$segment_state"
-' "TERM=dumb"
+nami_test_run_runtime "$project_root" "$temp_root" "$outside" \
+    "$project_root/tests/scenarios/runtime_uncolored.fish" \
+    "TERM=dumb"
 set uncolored_output $nami_test_runtime_output
-@test 'given terminal without color output, when prompt renders, then text segments remain visible' \
-    (contains -- 'UNCOLORED:segments=ready' $uncolored_output; echo $status) -eq 0
+@test 'given terminal without color output, when prompt renders, then text remains and escapes are absent' \
+    (contains -- 'UNCOLORED:segments=ready,escapes=absent' $uncolored_output; echo $status) -eq 0
 
 nami_test_run_runtime "$project_root" "$temp_root" "$repo" \
-    'emit fish_prompt; set jj_needle (string join "" -- (set_color $nami_color_jj_no_description) "$NAMI_TEST_CHANGE_ID"); set segment hidden; string match --quiet -- "*$jj_needle*" (fish_prompt | string collect); and set segment visible; printf "MISSING:segment=%s\n" "$segment"' \
+    "$project_root/tests/scenarios/runtime_missing_jj.fish" \
     "PATH=$temp_root/no-jj" \
     "NAMI_TEST_CHANGE_ID=$change_id"
 set missing_output $nami_test_runtime_output
@@ -133,19 +72,8 @@ set missing_warnings (
 @test 'given missing JJ, when prompt renders, then segment hides with one warning' \
     "$missing_output,"(count $missing_warnings) = 'MISSING:segment=hidden,1'
 
-set failure_script '
-source "$NAMI_TEST_HELPERS"
-set jj_needle (string join "" -- \
-    (set_color $nami_color_jj_no_description) "$NAMI_TEST_CHANGE_ID")
-emit fish_prompt
-nami_test_wait_for_no_jobs; or exit 1
-emit fish_preexec true
-set --erase PATH[1]
-emit fish_prompt
-nami_test_wait_for_prompt "$jj_needle"; or exit 1
-printf "RECOVERY:rendered=ready\n"
-'
-nami_test_run_runtime "$project_root" "$temp_root" "$repo" "$failure_script" \
+nami_test_run_runtime "$project_root" "$temp_root" "$repo" \
+    "$project_root/tests/scenarios/runtime_failure_recovery.fish" \
     "PATH=$project_root/tests/fixtures/failing-jj:$PATH" \
     "NAMI_TEST_HELPERS=$project_root/tests/helpers/runtime.fish" \
     "NAMI_TEST_CHANGE_ID=$change_id"
@@ -155,5 +83,28 @@ set failure_warnings (
 )
 @test 'given failed query, when JJ becomes available, then next refresh recovers after one warning' \
     (contains -- 'RECOVERY:rendered=ready' $failure_output; and test (count $failure_warnings) -eq 1; echo $status) -eq 0
+
+nami_test_run_runtime "$project_root" "$temp_root" "$outside" \
+    "$project_root/tests/scenarios/runtime_invalid_config.fish"
+set invalid_output $nami_test_runtime_output
+set invalid_stderr $nami_test_runtime_stderr
+set threshold_warnings (
+    string match --regex --all \
+        'nami: nami_cmd_duration_threshold must be a non-negative integer; using 1000' \
+        -- "$invalid_stderr"
+)
+set pwd_warnings (
+    string match --regex --all \
+        'nami: fish_prompt_pwd_dir_length must be a non-negative integer; using 1' \
+        -- "$invalid_stderr"
+)
+set unexpected_config_errors (
+    string split '\n' -- (string trim -- "$invalid_stderr") |
+        string match --invert --regex '^nami: '
+)
+@test 'given invalid numeric settings, when prompt renders twice, then defaults apply with one warning each' \
+    (contains -- 'INVALID:segments=ready' $invalid_output; and test (count $threshold_warnings) -eq 1; and test (count $pwd_warnings) -eq 1; echo $status) -eq 0
+@test 'given invalid numeric settings, when prompt renders, then stderr has no builtin diagnostics' \
+    (count $unexpected_config_errors) -eq 0
 
 rm -rf "$temp_root"
