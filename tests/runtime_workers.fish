@@ -24,9 +24,7 @@ set output $nami_test_runtime_output
 
 @echo '=== worker lifecycle ==='
 
-@test 'given foreground PWD change, when prompt is pending, then refresh stays deferred' \
-    (contains -- 'DEFERRED:first=alive,starts=1' $output; echo $status) -eq 0
-@test 'given blocked query, when next prompt renders elsewhere, then exactly one replacement starts' \
+@test 'given blocked query, when idle PWD changes, then exactly one replacement starts' \
     (contains -- 'REPLACED:first=dead,second=alive,starts=2' $output; echo $status) -eq 0
 @test 'given replacement query, when it completes, then latest workspace result wins' \
     (contains -- 'FINAL:rendered=ready,second=dead' $output; echo $status) -eq 0
@@ -38,6 +36,45 @@ set output $nami_test_runtime_output
     (contains -- 'IGNORED:worker=dead,jobs=idle,starts=5,segment=hidden' $output; echo $status) -eq 0
 @test 'given pending query, when Nami uninstalls, then process and result file are removed' \
     (contains -- 'UNINSTALL:worker=dead,jobs=idle,result=removed' $output; echo $status) -eq 0
+
+set phase_first "$temp_root/phase-first"
+set phase_second "$temp_root/phase-second"
+set phase_result "$temp_root/phase-result"
+set phase_scenario "$project_root/tests/scenarios/runtime_refresh_phase.fish"
+mkdir -p "$phase_first" "$phase_second"
+
+set init_command "source "(string escape -- "$phase_scenario")
+set fish_command (string join ' ' -- \
+    (string escape -- (status fish-path)) \
+    --interactive \
+    --init-command \
+    (string escape -- "$init_command"))
+
+pushd "$phase_first" >/dev/null; or exit 1
+begin
+    printf '%s\n' \
+        'cd "$NAMI_TEST_PHASE_SECOND"; printf "FOREGROUND\n" >>"$NAMI_TEST_PHASE_RESULT"'
+    printf '\x18'
+    printf '%s\n' exit
+end | env \
+    XDG_CONFIG_HOME="$temp_root" \
+    NAMI_TEST_PHASE_FIRST="$phase_first" \
+    NAMI_TEST_PHASE_SECOND="$phase_second" \
+    NAMI_TEST_PHASE_RESULT="$phase_result" \
+    TERM=dumb \
+    script --quiet --return --flush --command "$fish_command" /dev/null >/dev/null
+set phase_status $pipestatus[2]
+popd >/dev/null
+
+set phase_output (string split '\n' <"$phase_result")
+
+@test 'given foreground PWD change, when command still runs, then refresh stays deferred' \
+    (string join ',' -- $phase_output[1..2]) = 'REFRESH:phase-first,FOREGROUND'
+@test 'given deferred PWD change, when next prompt renders, then context refreshes' \
+    "$phase_output[3]" = 'REFRESH:phase-second'
+@test 'given key-binding PWD change, when binding still runs, then context refreshes immediately' \
+    (string join ',' -- $phase_output[4..5]) = 'REFRESH:phase-first,IDLE'
+@test 'given reader-phase scenario, when Fish exits, then harness succeeds' "$phase_status" -eq 0
 
 command rm -f -- "$started_file"
 touch "$gate_file"

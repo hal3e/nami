@@ -90,13 +90,7 @@ function _nami_start_jj_worker --argument-names workspace_root
     end
 end
 
-function _nami_defer_refresh --on-event fish_preexec
-    set --global _nami_refresh_deferred
-end
-
 function _nami_refresh --on-event fish_prompt
-    set --erase _nami_refresh_deferred
-
     set --local previous_root "$_nami_jj_workspace_root"
     set --local workspace_root (_nami_find_jj_root "$PWD")
 
@@ -116,7 +110,8 @@ function _nami_refresh --on-event fish_prompt
 end
 
 function _nami_on_pwd --on-variable PWD
-    set --query _nami_refresh_deferred; and return
+    # Foreground commands refresh at fish_prompt; reader bindings refresh here.
+    status current-commandline | string length --quiet; and return
 
     _nami_refresh
     commandline --function repaint 2>/dev/null

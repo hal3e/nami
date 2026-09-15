@@ -4,13 +4,7 @@ nami_test_wait_for_file_lines "$NAMI_TEST_JJ_STARTED" 1; or exit 1
 set worker_pids (nami_test_worker_pids "$NAMI_TEST_JJ_STARTED")
 set first_pid "$worker_pids[1]"
 
-emit fish_preexec 'cd second'
 cd "$NAMI_TEST_SECOND_WORKSPACE"
-printf 'DEFERRED:first=%s,starts=%s\n' \
-    (nami_test_process_state "$first_pid") \
-    (nami_test_worker_count "$NAMI_TEST_JJ_STARTED")
-
-emit fish_prompt
 nami_test_wait_for_file_lines "$NAMI_TEST_JJ_STARTED" 2; or exit 1
 set worker_pids (nami_test_worker_pids "$NAMI_TEST_JJ_STARTED")
 set second_pid "$worker_pids[2]"
