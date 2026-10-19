@@ -18,9 +18,11 @@ set change_id (
 )
 mkdir -p "$config_root"
 printf '%s\n' 'set --global fish_greeting' >"$config_root/config.fish"
+printf '%s\n' '[ui]' 'diff-formatter = ":invalid"' >"$temp_root/jj.toml"
 
 nami_test_run_runtime "$project_root" "$temp_root" "$repo" \
     "$project_root/tests/scenarios/runtime_core.fish" \
+    "JJ_CONFIG=$temp_root/jj.toml" \
     "NAMI_TEST_HELPERS=$project_root/tests/helpers/runtime.fish" \
     "NAMI_TEST_CHANGE_ID=$change_id" \
     "NAMI_TEST_OUTSIDE=$outside" \
@@ -41,7 +43,7 @@ set operation_after (
     (contains -- 'DEFAULT:jj-color=blue,prompt=>' $output; echo $status) -eq 0
 @test 'given JJ workspace, when Nami loads, then root-aware path is ready' \
     (contains -- 'ROOT:path=ready' $output; echo $status) -eq 0
-@test 'given initial query, when worker completes, then change ID and condition render' \
+@test 'Current change state renders despite an invalid user diff formatter' \
     (contains -- 'RESULT:rendered=ready' $output; echo $status) -eq 0
 @test 'given filesystem change, when JJ query completes, then operation head is unchanged' \
     "$operation_after" = "$operation_before"

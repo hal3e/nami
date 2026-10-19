@@ -51,7 +51,7 @@ Nami runs at most one worker. Each new prompt replaces any pending query with a 
 
 Nami does not time out a query while the shell is idle. A pending query is stopped before the next prompt query, idle directory refresh, shell exit, or uninstall. Missing or unsupported `jj` and query failures share one failure path: warn once, hide the segment for that refresh, and retry later.
 
-The worker receives the discovered root and runs one `jj --no-integrate-operation` log query. This provides current working-copy state without advancing `jj`'s operation head. `jj` still creates unintegrated snapshot operations and objects internally; Nami does not fetch, inspect remotes, or integrate those prompt operations.
+The worker receives the discovered root and runs one `jj --no-integrate-operation show --no-patch @` query using Nami's template. The query selects a built-in diff formatter to avoid loading user diff tools. This provides current working-copy state without advancing `jj`'s operation head. `jj` still creates unintegrated snapshot operations and objects internally; Nami does not fetch, inspect remotes, or integrate those prompt operations.
 
 Nami configuration loads at shell startup. Manually re-sourcing `conf.d/nami.fish` while a query is active is unsupported; restart Fish after updating Nami.
 

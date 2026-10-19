@@ -66,8 +66,10 @@ function _nami_start_jj_worker --argument-names workspace_root
 
     # Delay fast process-exit delivery until the receiver is registered.
     block
+    # show initializes a diff formatter even with --no-patch.
     command "$jj_path" --no-integrate-operation --quiet --repository "$workspace_root" \
-        log --no-pager --color=never --no-graph --revisions @ --template "$template" >"$result_file" 2>/dev/null &
+        --config 'ui.diff-formatter=":summary"' \
+        show --no-pager --color=never --no-patch @ --template "$template" >"$result_file" 2>/dev/null &
     set --global _nami_jj_worker_pid $last_pid
     set --global _nami_jj_worker_result_file "$result_file"
 
