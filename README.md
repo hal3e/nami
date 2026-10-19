@@ -1,6 +1,12 @@
-# Nami
+# nami
 
-Nami is a fast, single-line [fish](https://fishshell.com/) prompt focused on [jujutsu](https://www.jj-vcs.dev/) workspaces. It is derived from [Hydro](https://github.com/jorgebucaran/hydro), with git-specific behavior replaced by an asynchronous, non-integrating jj query.
+`nami` is a fast, single-line [fish](https://fishshell.com/) prompt focused on [jujutsu](https://www.jj-vcs.dev/) workspaces. It is derived from [Hydro](https://github.com/jorgebucaran/hydro), with git-specific behavior replaced by an asynchronous, non-integrating `jj` query.
+
+<p align="center">
+  <a href="#nami">
+    <img src="https://github.com/user-attachments/assets/53024fe1-5c3a-4506-868b-4b735111e137" alt="nami prompt usage example">
+  </a>
+</p>
 
 ## Install
 
@@ -18,7 +24,7 @@ When a `jj` query fails, `nami` emits one warning, hides the `jj` segment, and r
 
 ## Prompt
 
-Nami renders these segments on one line:
+`nami` renders these segments on one line:
 
 ``` text
 <mode> <path> <change-id> <duration> <pipeline-status> >
@@ -43,17 +49,17 @@ Nami renders these segments on one line:
 
 An empty, undescribed change is green because empty state has higher precedence than missing-description state.
 
-## Async `jj` Query
+## Async `jj` query
 
-Nami discovers the nearest `.jj/` ancestor synchronously with Fish builtins, so the workspace name is available before the first prompt render. Nami runs `jj` directly in the background and repaints when the newest result arrives.
+`nami` discovers the nearest `.jj/` ancestor synchronously with `fish` builtins, so the workspace name is available before the first prompt render. `nami` runs `jj` directly in the background and repaints when the newest result arrives.
 
-Nami runs at most one worker. Each new prompt replaces any pending query with a fresh query. Directory-history bindings refresh the path and query immediately. During the initial query, Nami reserves one blank change-ID character so a typical one-character result does not move the prompt symbol.
+`nami` runs at most one worker. Each new prompt replaces any pending query with a fresh query. Directory-history bindings refresh the path and query immediately. During the initial query, `nami` reserves one blank change-ID character so a typical one-character result does not move the prompt symbol.
 
-Nami does not time out a query while the shell is idle. A pending query is stopped before the next prompt query, idle directory refresh, shell exit, or uninstall. Missing or unsupported `jj` and query failures share one failure path: warn once, hide the segment for that refresh, and retry later.
+`nami` does not time out a query while the shell is idle. A pending query is stopped before the next prompt query, idle directory refresh, shell exit, or uninstall. Missing or unsupported `jj` and query failures share one failure path: warn once, hide the segment for that refresh, and retry later.
 
-The worker receives the discovered root and runs one `jj --no-integrate-operation show --no-patch @` query using Nami's template. The query selects a built-in diff formatter to avoid loading user diff tools. This provides current working-copy state without advancing `jj`'s operation head. `jj` still creates unintegrated snapshot operations and objects internally; Nami does not fetch, inspect remotes, or integrate those prompt operations.
+The worker receives the discovered root and runs one `jj --no-integrate-operation show --no-patch @` query using `nami`'s template. The query selects a built-in diff formatter to avoid loading user diff tools. This provides current working-copy state without advancing `jj`'s operation head. `jj` still creates unintegrated snapshot operations and objects internally; `nami` does not fetch, inspect remotes, or integrate those prompt operations.
 
-Nami configuration loads at shell startup. Manually re-sourcing `conf.d/nami.fish` while a query is active is unsupported; restart Fish after updating Nami.
+`nami` configuration loads at shell startup. Manually re-sourcing `conf.d/nami.fish` while a query is active is unsupported; restart Fish after updating `nami`.
 
 ## Configuration
 
